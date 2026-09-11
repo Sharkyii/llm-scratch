@@ -5,16 +5,24 @@ Original hypothesis: the paper's length reward, `R_len = 1 - max(0, r_C - r_T)`,
 at 1.0 for any output shorter than target, giving GRPO no gradient signal to correct
 under-compression. Everything below tests fixes for that.
 
+## The result
+
+**[`RESULT.png`](RESULT.png)** is the one chart that matters — the final, properly
+controlled comparison. Everything else in `charts/` is an intermediate step kept for the
+full story; two of them (`charts/superseded_*.png`) were built on a flawed comparison
+and are superseded by `RESULT.png` — see step 6 below for why.
+
 ## Files
 
+- **`RESULT.png`** — the final result (see above).
 - **`modal_grpo_run.py`** — the actual training/eval pipeline (runs on Modal, A100-40GB).
   `modal run modal_grpo_run.py [--followup | --deadband | --recipe-fix] [--smoke]`
 - **`cmprsr_final.ipynb`** — reference implementation (reward math, dataset prep); not
   executed directly, kept in sync with the Modal script.
 - **`results/`** — raw JSON output (config, full per-rollout logs, eval sets, timing/cost)
   and human-readable eval transcripts for each run.
-- **`charts/`** — training curves + eval distributions per run, plus two summary charts
-  comparing all of them.
+- **`charts/`** — per-run training curves, plus two early summary charts now marked
+  `superseded_*` (see below).
 
 ## The story, short version
 
@@ -46,17 +54,19 @@ under-compression. Everything below tests fixes for that.
    — length control came back down (`|Δ_CR|` 0.230). But this run reused the *old-recipe*
    Baseline (0.250) for comparison, which confounds reward shape with recipe: the
    improvement might just mean the new recipe helps training in general, not that it
-   specifically fixed the two-sided reward.
+   specifically fixed the two-sided reward. (This is the comparison behind
+   `charts/superseded_summary_all_runs.png` and
+   `charts/superseded_summary_quality_tradeoff.png` — kept for the record, not the answer.)
 
 6. **`baseline_new_recipe_results.json`** — closed that confound: retrained Baseline
    from scratch under the *same* corrected recipe, for a fair, matched comparison.
-   Result (`charts/summary_final_matched.png`): under matched conditions, λ=2.0 **ties**
+   Result (**[`RESULT.png`](RESULT.png)**): under matched conditions, λ=2.0 **ties**
    Baseline on length control (`|Δ_CR|` 0.230 vs 0.201, p=0.412, not significant) and
    **significantly beats it on quality** (`r_qual` 0.332 vs 0.243, p=0.0203).
 
 ## Bottom line
 
-See `charts/summary_final_matched.png` for the properly controlled result. The original
+See **[`RESULT.png`](RESULT.png)** for the properly controlled result. The original
 hypothesis holds: once both the pipeline bugs (advantage collapse, eval-mode bug, etc.)
 and the training recipe (LR, scale — matching the source paper's Table 5) are fixed, the
 two-sided reward matches the original reward on length control and meaningfully improves
